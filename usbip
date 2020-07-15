@@ -1,0 +1,173 @@
+#!/bin/bash
+
+set +e
+usbipver="V0.01"
+
+function fil_bck {
+  if [ "$1" != "" ] && [ -f "$1" ]
+  then
+    if [ "$2" != "" ]; then fn="$1.$2"; else fn="$1.old"; fi
+    cp "$1" "$fn"
+  fi
+}
+
+function Delete_dnsmasq {
+  fil="/etc/dnsmasq.d/usb"
+  rm "$fil" 2>/dev/null
+}
+
+function Create_dnsmasq {
+ fil="/etc/dnsmasq.d/usb"
+  cat <<EOF > "$fil"
+#interface=usb0
+listen-address=10.3.142.1
+dhcp-range=usb0,10.3.142.100,10.3.142.199,255.255.255.0,1h
+dhcp-option=3
+leasefile-ro
+EOF
+  chmod 644 "$fil"
+}
+
+function Create_interface {
+  fil="/etc/network/interfaces.d/usb0"
+  cat <<EOF > "$fil"
+auto usb0
+allow-hotplug usb0
+iface usb0 inet static
+  address 10.3.142.1
+  netmask 255.255.255.0
+EOF
+  chmod 644 "$fil"
+}
+
+function USBip_setup  {
+  echo `date +"%Y-%m-%d %T"` "USBip setup ..."
+
+  if [ "`apt -qq list dnsmasq 2>/dev/null`" == "" ]; then
+    apt -qy install dnsmasq
+  fi
+
+  fil="/boot/cmdline.txt"
+  entry="modules-load=dwc2"
+  cmdline=`grep "$entry" $fil`
+  if [ "$cmdline" == "" ]; then
+    fil_bck "$fil" "$bckext"
+    cmdline=`cat $fil`
+    echo "$cmdline $entry" > $fil
+  fi
+
+  fil="/boot/config.txt"
+  fil_bck "$fil" "$bckext"
+  grep -qsF "dtoverlay=dwc2" $fil || echo "dtoverlay=dwc2" >> $fil
+  sed -r -i 's/dtoverlay=dwc2.*/dtoverlay=dwc2/g' $fil
+  sed -r -i 's/#dtoverlay=dwc2/dtoverlay=dwc2/g' $fil
+
+  fil="/etc/modules"
+  fil_bck "$fil" "$bckext"
+  grep -qsF "libcomposite" $fil || echo "libcomposite" >> $fil
+
+  Create_interface
+
+  fil="/lib/systemd/system/usbip.service"
+  cat <<EOF > "$fil"
+[Unit]
+Description=usbip
+After=network.target
+Wants=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/usr/local/sbin
+ExecStart=/usr/local/sbin/usbip start
+ExecStop=/usr/local/sbin/usbip stop
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  chmod 644 "$fil"
+
+  systemctl enable  usbip.service >/dev/null 2>&1
+# systemctl restart usbip.service >/dev/null 2>&1
+}
+
+function USBip_start  {
+  echo `date +"%Y-%m-%d %T"` "USBip start ..."
+
+  mkdir -p /sys/kernel/config/usb_gadget/pi4/
+  cd /sys/kernel/config/usb_gadget/pi4
+
+# the USB vendor and product IDs are issued by the USB-IF
+# each USB gadget must be identified by a vendor and
+# product ID
+
+  echo 0x1d6b > idVendor  # Linux Foundation
+  echo 0x0104 > idProduct # Multifunction Composite Gadget
+
+  mkdir -p strings/0x409  # set it up as English
+
+# The configuration below is arbitrary
+  serial=`cat /proc/cpuinfo | grep Serial | cut -d ' ' -f 2`
+  echo "$serial" >          strings/0x409/serialnumber
+  echo "yourCompany.com" >  strings/0x409/manufacturer
+  echo "USB IP Bridge" >    strings/0x409/product
+
+# create a configuration
+  mkdir -p configs/c.1
+
+# create a function
+# ECM is the function name, and usb0 is arbitrary string
+# that represents the instance name
+  mkdir -p functions/ecm.usb0
+
+# associate function to configuration
+  ln -s functions/ecm.usb0 configs/c.1/ 2>/dev/null
+
+# bind the gadget to UDC
+  ls /sys/class/udc > UDC 2>/dev/null
+
+# start up usb0
+  ifup usb0 2>/dev/null
+
+  if [ "`ip a | grep usb0`" != "" ]; then
+    echo "device usb0 is up"
+#   Create_dnsmasq
+#   service dnsmasq restart
+    /usr/sbin/dnsmasq --interface=usb0 --except-interface=lo --bind-interfaces --dhcp-range=10.3.142.100,10.3.142.199,255.255.255.0,1h -x /var/run/dnsmasq_usbip.pid --conf-file=/dev/null --log-queries --log-facility=syslog
+  else
+    echo "no device usb0 found"
+  fi
+}
+
+function USBip_stop  {
+  echo `date +"%Y-%m-%d %T"` "USBip stop ..."
+
+  systemctl disable  usbip.service >/dev/null 2>&1
+  systemctl stop     usbip.service >/dev/null 2>&1
+
+  if [ "`ip a | grep usb0`" != "" ]; then
+#   Delete_dnsmasq
+    ifdown usb0 2>/dev/null
+#   service dnsmasq restart
+    pkill -9 --pidfile /var/run/dnsmasq_usbip.pid 2>/dev/null
+  fi
+}
+
+bckext=`date +"%Y%m%d%H%M%S"`
+
+case "$1" in
+        setup)
+            USBip_setup "$2"
+            ;;
+        start)
+            USBip_start "$2"
+            ;;
+        stop)
+            USBip_stop  "$2"
+            ;;
+	version)
+            echo "$usbipver"
+            ;;
+          *)
+  echo "Usage: usbip start | stop | setup | version"
+  exit 1
+esac
