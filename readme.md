@@ -1,6 +1,6 @@
 # usbip
 
-shell script for setup IP protocol running over USB port on rpi platform 4\
+shell script for setup IP protocol running over USB port on rpi platform 4
 
 functions:
 
@@ -9,7 +9,7 @@ functions:
 - setup
 - version
 
-will use [https://www.kernel.org/doc/html/v4.17/driver-api/usb/gadget.html](**Linux USB Gadget API**)\
+will use [https://www.kernel.org/doc/html/v4.17/driver-api/usb/gadget.html](Linux USB Gadget API)
 
 for full installation and setup sequence, pls. see **installation and setup** section at the bottom of this file
 
@@ -58,7 +58,7 @@ en9: flags=8863<UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST> mtu 1500
 	status: active
 ~~~
 
-![MAC Network config](./img/IMG_MacBookNetwork.jpg)
+![MAC Network config](./img/IMG_MacBookNetwork.png)
 
 ## installation
 
