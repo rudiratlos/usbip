@@ -9,14 +9,14 @@ functions:
 - setup
 - version
 
-will use [https://www.kernel.org/doc/html/v4.17/driver-api/usb/gadget.html](Linux USB Gadget API)
+will use [Linux USB Gadget API](https://www.kernel.org/doc/html/v4.17/driver-api/usb/gadget.html)
 
 for full installation and setup sequence, pls. see **installation and setup** section at the bottom of this file
 
 ![rpi4 and MAC](./img/IMG_1149.jpg)
 
 rpi4 (8GB revision 1.2) connected to MacBook Pro via USB-C - USB-C cable\
-pls. note: if you want to use USB-C connectors on both side, you need **rpi4 revision 1.2**\
+**pls. note:** if you want to use USB-C connectors on both side, you need **rpi4 revision 1.2**
 
 on rpi
 ~~~bash
