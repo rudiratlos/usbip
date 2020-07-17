@@ -16,8 +16,13 @@ for full installation and setup sequence, pls. see **installation and setup** se
 ![rpi4 and MAC](./img/IMG_1149.jpg)
 
 rpi4 (8GB revision 1.2) connected to MacBook Pro via USB-C - USB-C cable\
-**pls. note:** if you want to use USB-C connectors on both side, you need **rpi4 revision 1.2**
+**pls. note:** if you want to use USB-C connectors on both sides, you need **rpi4 revision 1.2**
 
+![rpi4 and MAC](./img/IMG_1151.jpg)
+![rpi4 and MAC](./img/IMG_1152.jpg)
+
+rpi4 (2GB revision 1.0) connected to MacBook Pro via USB-C - MicroUSB cable - MicroUSB/USB-C adapter
+ 
 on rpi
 ~~~bash
 root@pump:/home/pi# ip a

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set +e
-usbipver="V0.01"
+usbipver="V0.02"
 
 function fil_bck {
   if [ "$1" != "" ] && [ -f "$1" ]
@@ -38,6 +38,16 @@ iface usb0 inet static
   netmask 255.255.255.0
 EOF
   chmod 644 "$fil"
+}
+
+function USBip_enable  {
+  echo `date +"%Y-%m-%d %T"` "USBip enable service ..."
+  systemctl enable  usbip.service >/dev/null 2>&1
+}
+
+function USBip_disable  {
+  echo `date +"%Y-%m-%d %T"` "USBip disable service ..."
+  systemctl disable  usbip.service >/dev/null 2>&1
 }
 
 function USBip_setup  {
@@ -86,7 +96,7 @@ WantedBy=multi-user.target
 EOF
   chmod 644 "$fil"
 
-  systemctl enable  usbip.service >/dev/null 2>&1
+  USBip_enable
 # systemctl restart usbip.service >/dev/null 2>&1
 }
 
@@ -141,7 +151,6 @@ function USBip_start  {
 function USBip_stop  {
   echo `date +"%Y-%m-%d %T"` "USBip stop ..."
 
-  systemctl disable  usbip.service >/dev/null 2>&1
   systemctl stop     usbip.service >/dev/null 2>&1
 
   if [ "`ip a | grep usb0`" != "" ]; then
@@ -163,6 +172,12 @@ case "$1" in
             ;;
         stop)
             USBip_stop  "$2"
+            ;;
+        enable)
+            USBip_enable  "$2"
+            ;;
+        disable)
+            USBip_disable  "$2"
             ;;
 	version)
             echo "$usbipver"
